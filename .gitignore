@@ -1,0 +1,7 @@
+.DS_Store
+.postgres_data
+__pycache__/
+*.py[cod]
+pip-log.txt
+.env
+.venv
