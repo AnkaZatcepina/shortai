@@ -5,3 +5,4 @@ __pycache__/
 pip-log.txt
 .env
 .venv
+/storage/
