@@ -19,15 +19,17 @@ CREDENTIALS = os.getenv('GIGACHAT_CREDENTIALS')
 giga = GigaChat(credentials=CREDENTIALS, verify_ssl_certs=False)
 
 def get_file(user_id: str)-> str | None:
-    filename = f'./storage/current_text_{user_id:}.txt'
+    filename = f'./storage/current_text_{user_id}.txt'
     try:
         with open(filename, mode='r', encoding='utf-8') as file:
-            return file.readline()
+            text = ' '.join(file.readlines())
+        return text    
     except:
         return None  
 
 def get_summary(user_id: str)->str:
     text = get_file(user_id)
+    logger.info(text)
     if text == None:
         return "Извините, не получается проанализировать текст"  
     
@@ -88,16 +90,15 @@ def get_theses(user_id: str)->str:
         return "Извините, не получается проанализировать текст"  
     
     prompt_template = """
-        Ты писатель. Твоя задача написать основные тезисы по тексту ниже. Ничего не придумывай, только текст ниже между ``````
-        Если текст не на русском языке, то переведи на русский язык.
-        Каждый тезиз должен начинаться с новой строки с символа *.
+        Ты писатель. Твоя задача перевести текст на русский язык и написать основные тезисы по тексту ниже. Ничего не придумывай, только текст ниже между ``````
+        Тезисы должны быть написаны в виде нумерованного списка на русском языке.
         ```{text}```
         """
     chat_template = ChatPromptTemplate.from_messages(
         [
         SystemMessage(
             content=(
-                "Ты эксперт журналист. Твоя задача написать основные тезисы статьи. Нельзя ничего придумывать, кроме информации из статьи."
+                "Ты эксперт журналист. Твоя задача написать основные тезисы статьи в виде нумерованного списка. Нельзя ничего придумывать, кроме информации из статьи."
             )
         ),
         HumanMessagePromptTemplate.from_template(prompt_template),

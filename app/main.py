@@ -21,6 +21,7 @@ from telegram.ext import (
 
 from text_analizer import get_summary, get_one_sentence, get_theses
 from parser.url_parser import parse_url_to_file
+from parser.doc_parser import parse_document_to_file
 
 
 # Based on https://github.com/python-telegram-bot/python-telegram-bot/wiki/Extensions---Your-first-Bot
@@ -48,16 +49,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     return SELECT_SOURCE
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    return
-    file = await context.bot.get_file(update.message.document)
-    logger.info(f'document {file.file_name}')
-    file_info = await context.bot.get_file(file.file_id)
+    
+    logger.info('document')
+    user = update.message.from_user
+    file_info = await context.bot.get_file(update.message.document.file_id)
     logger.info(file_info)
-    filename = f'./storage/{file.file_name}'
+    filename = f'./storage/{update.message.document.file_name}'
+    context.user_data["current_doc"] = filename
+    logger.info(filename)
     await file_info.download_to_drive(filename)
-    document_type = get_document_type(filename)
-    await update.message.reply_text(document_type["message"])
+    result = parse_document_to_file(filename, user['id'])
+
+    if not result:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Извините, не получилось распознать документ.')
+        return SELECT_SOURCE
+    
+    buttons = [
+        [
+            InlineKeyboardButton(text="Краткое описание", callback_data=str(SUMMARY)),
+            InlineKeyboardButton(text="Одним предложением", callback_data=str(ONE_SENTENCE)),
+            InlineKeyboardButton(text="Тезисы", callback_data=str(THESES)),
+        ],
+    ]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    await update.message.reply_text("Выберите опцию:", reply_markup=reply_markup)
     return SELECT_SHORT
+
 
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('url')
@@ -83,7 +100,6 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
  
 async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('summary')
-    logger.info(update)
     user = update.callback_query.from_user
     answer = get_summary(user['id'])
     await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
@@ -91,7 +107,6 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
 async def one_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('one_sentence')
-    logger.info(update)
     user = update.callback_query.from_user
     answer = get_one_sentence(user['id'])
     await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
@@ -99,7 +114,6 @@ async def one_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
 
 async def theses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('theses')
-    logger.info(update)
     user = update.callback_query.from_user
     answer = get_theses(user['id'])
     await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
@@ -115,8 +129,10 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={ # словарь состояний разговора, возвращаемых callback функциями
             SELECT_SOURCE: [
-                MessageHandler(filters.Document.TEXT, handle_document),
-                MessageHandler(filters.Document.PDF, handle_document),
+                MessageHandler(filters.Document.TEXT 
+                               | filters.Document.DOC
+                               | filters.Document.DOCX
+                               | filters.Document.PDF, handle_document),
                 MessageHandler(filters.Regex('^(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*$'), handle_url),
             ],
             SELECT_SHORT: [

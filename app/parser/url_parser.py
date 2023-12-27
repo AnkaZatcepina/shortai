@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 def parse_url_to_file(url: str, user_id: str)->bool:
     
-    text = get_web_page(url)
-    if text == None:
+    lines = get_web_page(url)
+    if lines == None:
         return False
     
     output = ''
@@ -24,17 +24,17 @@ def parse_url_to_file(url: str, user_id: str)->bool:
         'script',
         # there may be more elements you don't want, such as "style", etc.
     ]
-
-    for t in text:
-        if t.parent.name not in blacklist:
-            output += '{} '.format(t)
+    text = ''
+    for line in lines:
+        if line.parent.name not in blacklist:
+            text += '{} '.format(line)
 
    
-    output_without_multyspaces = re.sub(' +', ' ', output)
-    output_without_multyspaces_and_new_lines = output_without_multyspaces.replace("\n", "")
+    text_without_multyspaces = re.sub(' +', ' ', text)
+    text_without_multyspaces_and_new_lines = text_without_multyspaces.replace("\n", "")
 
     
-    return save_text_to_storage(output_without_multyspaces_and_new_lines, user_id)
+    return save_text_to_storage(text_without_multyspaces_and_new_lines, user_id)
 
 def get_web_page(url) -> str | None:
     
@@ -56,7 +56,7 @@ def save_text_to_storage(text: str, user_id: str)->bool:
     #print(text)
     if len(text) <= 0:
         return False
-    filename = f'./storage/current_text_{user_id:}.txt'
+    filename = f'./storage/current_text_{user_id}.txt'
     logger.info(filename)
     try:
         with open(filename, mode='w', encoding='utf-8') as file:
