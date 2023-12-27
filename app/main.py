@@ -3,9 +3,11 @@ import logging
 
 from typing import Any, Dict, Tuple
 from dotenv import load_dotenv
-from telegram import InlineKeyboardButton
-from telegram import InlineKeyboardMarkup
-from telegram import Update
+from telegram import ( 
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Update,
+)
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
@@ -16,6 +18,10 @@ from telegram.ext import (
     Updater,
     filters,
 )
+
+from text_analizer import get_summary, get_one_sentence, get_theses
+from parser.url_parser import parse_url_to_file
+
 
 # Based on https://github.com/python-telegram-bot/python-telegram-bot/wiki/Extensions---Your-first-Bot
 
@@ -34,17 +40,35 @@ TOKEN = os.getenv('TELEGRAM_TOKEN')
 SELECT_SOURCE, SELECT_SHORT = range(2)
 SUMMARY, ONE_SENTENCE, THESES = range(3)
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('started')
+    print(id(logger))
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Это ИИ для краткого изложения текстов. Введите ссылку на текст или прикрепите документ")
     return SELECT_SOURCE
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    logger.info('pdf')
+    return
+    file = await context.bot.get_file(update.message.document)
+    logger.info(f'document {file.file_name}')
+    file_info = await context.bot.get_file(file.file_id)
+    logger.info(file_info)
+    filename = f'./storage/{file.file_name}'
+    await file_info.download_to_drive(filename)
+    document_type = get_document_type(filename)
+    await update.message.reply_text(document_type["message"])
     return SELECT_SHORT
 
-async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    logger.info('link')
+async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    logger.info('url')
+    user = update.message.from_user
+    url = update.message.text
+    result = parse_url_to_file(url, user['id'])
+
+    if not result:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Извините, не удалось прочитать ссылку {url}. Попробуйте, пожалуйста, другую')
+        return SELECT_SOURCE
+    
     buttons = [
         [
             InlineKeyboardButton(text="Краткое описание", callback_data=str(SUMMARY)),
@@ -53,23 +77,37 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
         ],
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
-    await update.message.reply_text("Это ссылка. Выберите опцию:", reply_markup=reply_markup)
+    await update.message.reply_text("Выберите опцию:", reply_markup=reply_markup)
 
     return SELECT_SHORT
  
-async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('summary')
-    pass
+    logger.info(update)
+    user = update.callback_query.from_user
+    answer = get_summary(user['id'])
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
+    return SELECT_SOURCE
 
-async def one_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def one_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('one_sentence')
-    pass
+    logger.info(update)
+    user = update.callback_query.from_user
+    answer = get_one_sentence(user['id'])
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
+    return SELECT_SOURCE
 
-async def theses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def theses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     logger.info('theses')
-    pass
+    logger.info(update)
+    user = update.callback_query.from_user
+    answer = get_theses(user['id'])
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
+    return SELECT_SOURCE
 
 def main():
+    if not os.path.exists("./storage"):
+        os.makedirs("./storage")
     logger.info("Init App...")
     app = ApplicationBuilder().token(TOKEN).build()
 
@@ -77,8 +115,9 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={ # словарь состояний разговора, возвращаемых callback функциями
             SELECT_SOURCE: [
+                MessageHandler(filters.Document.TEXT, handle_document),
                 MessageHandler(filters.Document.PDF, handle_document),
-                MessageHandler(filters.Regex('^(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*$'), handle_link),
+                MessageHandler(filters.Regex('^(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*$'), handle_url),
             ],
             SELECT_SHORT: [
                 CallbackQueryHandler(summary,       pattern='^' + str(SUMMARY) + '$'),

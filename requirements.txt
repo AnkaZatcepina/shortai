@@ -1,5 +1,7 @@
 python-telegram-bot
 python-dotenv
-langchain
-gigachat
+gigachain
 chromadb
+bs4
+fake_useragent
+nest_asyncio
