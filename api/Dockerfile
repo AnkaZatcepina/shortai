@@ -1,0 +1,19 @@
+FROM python:3.11-slim as base
+
+ENV PYTHONFAULTHANDLER=1 \
+     PYTHONUNBUFFERED=1 \
+     PYTHONDONTWRITEBYTECODE=1 \
+     PIP_DISABLE_PIP_VERSION_CHECK=on
+
+WORKDIR /api
+COPY requirements.txt /api/
+RUN pip install -r requirements.txt --no-cache-dir
+
+COPY . /api/
+
+FROM base as dev
+RUN apt-get update && apt-get install gcc npm -y && apt-get clean
+RUN npm install -g nodemon
+
+FROM base as PROD
+ENV DEBUG False

@@ -31,3 +31,22 @@ services:
       - .env
     depends_on:
       - db
+  api:
+    build:
+      context: api
+      dockerfile: Dockerfile
+      target: dev
+    container_name: shortai_api
+    restart: always
+    volumes:
+      - ./api:/api
+    ports:
+      - "8077:8000"
+    command: >
+      /bin/sh -c "
+        nodemon -e py --watch . --exec 'python -u main.py'
+      "
+    env_file:
+      - .env
+    depends_on:
+      - db
