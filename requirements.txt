@@ -7,3 +7,4 @@ fake_useragent
 nest_asyncio
 Spire.Doc
 pypdf
+chardet

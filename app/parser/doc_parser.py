@@ -4,9 +4,11 @@ import logging
 from spire.doc import *
 from spire.doc.common import *
 from langchain.document_loaders import PyPDFLoader
-
+import codecs
+import chardet
 
 logger = logging.getLogger(__name__)
+
 
 def parse_document_to_file(filename: str, user_id: str)->bool:
     _, extension = os.path.splitext(filename)
@@ -16,7 +18,8 @@ def parse_document_to_file(filename: str, user_id: str)->bool:
     logger.info(f'{filename} -->>> {new_filename}')
     match extension:
         case ".txt":
-            return rename_file(filename, new_filename)
+            #return rename_file(filename, new_filename)
+            return save_txt(filename, new_filename)
         case ".pdf":
             return convert_pdf_to_txt(filename, new_filename)
         case ".doc" | ".docx":
@@ -28,6 +31,37 @@ def parse_document_to_file(filename: str, user_id: str)->bool:
 
 def rename_file(filename: str, new_filename: str) -> bool: 
     os.rename(filename, new_filename)     
+    return True
+
+
+def save_txt(filename: str, new_filename: str) -> bool:     
+    try:
+        #read input file
+        logger.info(f'filename: {filename}')
+        
+        with open(filename, 'rb') as opened_file:
+            bytes_file = opened_file.read()
+            chardet_data = chardet.detect(bytes_file)
+            fileencoding = (chardet_data['encoding'])
+            logger.info(f'fileencoding {fileencoding}')
+        if fileencoding == 'windows-1251':
+            with codecs.open(filename, 'r', encoding = 'cp1251') as file:
+                lines = file.read()
+            with codecs.open(new_filename, 'w', encoding = 'utf-8') as file:
+                file.write(lines)
+        else:
+            os.rename(filename, new_filename)       
+    except:
+        print('Ошибка сохранения файла')
+        return False
+    return True 
+
+    try:
+        with open(new_filename, mode='w', encoding='utf-8') as file:
+            file.write(text)
+    except:
+        print('Ошибка сохранения файла')
+        return False
     return True
 
 def convert_doc_to_txt(filename: str, new_filename: str) -> bool:   
@@ -47,6 +81,7 @@ def convert_pdf_to_txt(filename: str, new_filename: str) -> bool:
     logger.info(text)
     try:
         with open(new_filename, mode='w', encoding='utf-8') as file:
+        #with open(new_filename, mode='w') as file:
             file.write(text)
     except:
         print('Ошибка сохранения файла')
