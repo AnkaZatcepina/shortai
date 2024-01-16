@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 def hello_world():
     return 'Hello World!'
 
-@app.route("/promt_text", methods=['POST'])
-def promt_text():
+@app.route("/prompt_text", methods=['POST'])
+def prompt_text():
     data = request.get_json()
     if data is None:
         return jsonify({ 'error': 'Missing input' }), 400
@@ -58,14 +58,11 @@ def promt_text():
     result = summary_chain.run(splitted_text)
 
     response = {
-        "promted_text": result,
+        'prompted_text': result,
     }
     
     logger.info(f'RESPONSE: {response}')
-    return json.dumps(response, ensure_ascii=True)
-    return jsonify({
-        "promted_text": result,
-    })
+    return json.dumps(response, ensure_ascii=False)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
