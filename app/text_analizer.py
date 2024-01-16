@@ -22,6 +22,7 @@ nest_asyncio.apply()
 
 load_dotenv()
 CREDENTIALS = os.getenv('GIGACHAT_CREDENTIALS')
+API_URL = os.getenv('API_URL')
 giga = GigaChat(credentials=CREDENTIALS, verify_ssl_certs=False)
 
 def get_file(user_id: str)-> str | None:
@@ -46,7 +47,7 @@ def get_summary(user_id: str)->str:
         """
     
     json_request = { 'map_prompt' :  prompt_template, 'combine_prompt':  prompt_template, 'text': text}
-    response = requests.post('http://192.168.50.8:8077/prompt_text', json=json_request)
+    response = requests.post(f'{API_URL}/prompt_text', json=json_request)
     logger.info(f'STATUS {response.status_code}')
     content_type = {response.headers['Content-Type']}
     logger.info(f'CONTENT TYPE {content_type}')     
