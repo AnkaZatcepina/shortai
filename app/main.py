@@ -1,3 +1,8 @@
+"""
+    Модуль Telegram-бот
+"""
+
+
 import os
 import logging
 
@@ -24,16 +29,13 @@ from parser.url_parser import parse_url_to_file
 from parser.doc_parser import parse_document_to_file
 
 
-# Based on https://github.com/python-telegram-bot/python-telegram-bot/wiki/Extensions---Your-first-Bot
-
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
-# to avoid all GET and POST requests being logged
-logging.getLogger("httpx").setLevel(logging.WARNING)
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -41,15 +43,25 @@ TOKEN = os.getenv('TELEGRAM_TOKEN')
 SELECT_SOURCE, SELECT_SHORT = range(2)
 SUMMARY, ONE_SENTENCE, THESES = range(3)
 
+short_buttons = [
+    [
+        InlineKeyboardButton(text="Краткое описание", callback_data=str(SUMMARY)),
+        InlineKeyboardButton(text="Одним предложением", callback_data=str(ONE_SENTENCE)),
+        InlineKeyboardButton(text="Тезисы", callback_data=str(THESES)),
+    ],
+]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    """Старт бота"""
+
     logger.info('started')
     print(id(logger))
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Это ИИ для краткого изложения текстов. Введите ссылку на текст или прикрепите документ")
     return SELECT_SOURCE
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    
+    """Получение документа от пользователя"""
+
     logger.info('document')
     user = update.message.from_user
     file_info = await context.bot.get_file(update.message.document.file_id)
@@ -64,19 +76,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Извините, не получилось распознать документ.')
         return SELECT_SOURCE
     
-    buttons = [
-        [
-            InlineKeyboardButton(text="Краткое описание", callback_data=str(SUMMARY)),
-            InlineKeyboardButton(text="Одним предложением", callback_data=str(ONE_SENTENCE)),
-            InlineKeyboardButton(text="Тезисы", callback_data=str(THESES)),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(buttons)
+    reply_markup = InlineKeyboardMarkup(short_buttons)
     await update.message.reply_text("Выберите опцию:", reply_markup=reply_markup)
     return SELECT_SHORT
 
 
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    """Получение ссылки от пользователя"""
+
     logger.info('url')
     user = update.message.from_user
     url = update.message.text
@@ -86,19 +93,14 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f'Извините, не удалось прочитать ссылку {url}. Попробуйте, пожалуйста, другую')
         return SELECT_SOURCE
     
-    buttons = [
-        [
-            InlineKeyboardButton(text="Краткое описание", callback_data=str(SUMMARY)),
-            InlineKeyboardButton(text="Одним предложением", callback_data=str(ONE_SENTENCE)),
-            InlineKeyboardButton(text="Тезисы", callback_data=str(THESES)),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(buttons)
+    reply_markup = InlineKeyboardMarkup(short_buttons)
     await update.message.reply_text("Выберите опцию:", reply_markup=reply_markup)
 
     return SELECT_SHORT
  
 async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    """Кнопка 'Краткое описание' """
+
     logger.info('summary')
     user = update.callback_query.from_user
     answer = get_summary(user['id'])
@@ -106,6 +108,8 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     return SELECT_SOURCE
 
 async def one_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    """Кнопка 'Одним предложением' """
+
     logger.info('one_sentence')
     user = update.callback_query.from_user
     answer = get_one_sentence(user['id'])
@@ -113,6 +117,8 @@ async def one_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
     return SELECT_SOURCE
 
 async def theses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    """Кнопка 'Тезисы' """
+
     logger.info('theses')
     user = update.callback_query.from_user
     answer = get_theses(user['id'])
@@ -120,6 +126,9 @@ async def theses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     return SELECT_SOURCE
 
 def main():
+    """Основное диалоговое меню бота"""
+
+    
     if not os.path.exists("./storage"):
         os.makedirs("./storage")
     logger.info("Init App...")

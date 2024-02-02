@@ -1,3 +1,7 @@
+"""
+    Модуль парсинга разных видов файлов
+"""
+
 import os
 import re
 import logging
@@ -10,7 +14,9 @@ import chardet
 logger = logging.getLogger(__name__)
 
 
-def parse_document_to_file(filename: str, user_id: str)->bool:
+def parse_document_to_file(filename: str, user_id: str)->bool:    
+    """Преобразование файла в txt"""
+
     _, extension = os.path.splitext(filename)
     extension = extension.lower()
     logger.info(extension)
@@ -18,7 +24,6 @@ def parse_document_to_file(filename: str, user_id: str)->bool:
     logger.info(f'{filename} -->>> {new_filename}')
     match extension:
         case ".txt":
-            #return rename_file(filename, new_filename)
             return save_txt(filename, new_filename)
         case ".pdf":
             return convert_pdf_to_txt(filename, new_filename)
@@ -35,6 +40,8 @@ def rename_file(filename: str, new_filename: str) -> bool:
 
 
 def save_txt(filename: str, new_filename: str) -> bool:     
+    """Сохранение txt-файла в кодировке utf-8"""
+
     try:
         #read input file
         logger.info(f'filename: {filename}')
@@ -56,22 +63,19 @@ def save_txt(filename: str, new_filename: str) -> bool:
         return False
     return True 
 
-    try:
-        with open(new_filename, mode='w', encoding='utf-8') as file:
-            file.write(text)
-    except:
-        print('Ошибка сохранения файла')
-        return False
-    return True
 
 def convert_doc_to_txt(filename: str, new_filename: str) -> bool:   
+    """Преобразование Word-документа в txt"""
+
     document = Document()
     document.LoadFromFile(filename)
     document.SaveToFile(new_filename, FileFormat.Txt)
     document.Close()
     return True
 
-def convert_pdf_to_txt(filename: str, new_filename: str) -> bool:   
+def convert_pdf_to_txt(filename: str, new_filename: str) -> bool:  
+    """Преобразование PDF-документа в txt"""  
+
     loader = PyPDFLoader(filename)
     logger.info(loader)
     pages = loader.load_and_split()
@@ -81,7 +85,6 @@ def convert_pdf_to_txt(filename: str, new_filename: str) -> bool:
     logger.info(text)
     try:
         with open(new_filename, mode='w', encoding='utf-8') as file:
-        #with open(new_filename, mode='w') as file:
             file.write(text)
     except:
         print('Ошибка сохранения файла')
@@ -89,6 +92,8 @@ def convert_pdf_to_txt(filename: str, new_filename: str) -> bool:
     return True
 
 def clean_file(filename: str):
+    """Очистка текстового файл от лишних пробелов"""
+    
     with open(filename, 'r') as file:
         lines = file.readlines()
         text = ' '.join(lines)

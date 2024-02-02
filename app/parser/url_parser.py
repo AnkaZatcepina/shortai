@@ -1,3 +1,6 @@
+"""
+    Модуль парсинга URL
+"""
 import logging
 import re
 import requests
@@ -7,6 +10,7 @@ from bs4 import BeautifulSoup
 logger = logging.getLogger(__name__)
 
 def parse_url_to_file(url: str, user_id: str)->bool:
+    """"Очистка страницы от ненужных разделов. Оставляем только тексты"""
     
     lines = get_web_page(url)
     if lines == None:
@@ -37,7 +41,8 @@ def parse_url_to_file(url: str, user_id: str)->bool:
     return save_text_to_storage(text_without_multyspaces_and_new_lines, user_id)
 
 def get_web_page(url) -> str | None:
-    
+    """Получение текста страницы по ссылке"""
+
     logger.info(url)
     
     print(id(logger))
@@ -53,7 +58,8 @@ def get_web_page(url) -> str | None:
     return text
 
 def save_text_to_storage(text: str, user_id: str)->bool:
-    #print(text)
+    """Сохраненение текста страницы в хранилище по ID пользователя"""
+
     if len(text) <= 0:
         return False
     filename = f'./storage/current_text_{user_id}.txt'

@@ -1,3 +1,7 @@
+"""
+    API для обработки текстов по заданным промптам
+"""
+
 import os
 import logging
 from dotenv import load_dotenv
@@ -25,10 +29,13 @@ logger = logging.getLogger(__name__)
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return 'Hello, use /prompt_text'
 
 @app.route("/prompt_text", methods=['POST'])
 def prompt_text():
+    """
+    POST-метод, принимает на вход JSON с текстом и промптами, возвращет JSON скратким описанием
+    """
     data = request.get_json()
     if data is None:
         return jsonify({ 'error': 'Missing input' }), 400
