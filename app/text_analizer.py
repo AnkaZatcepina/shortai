@@ -5,18 +5,9 @@
 import os
 import logging
 from dotenv import load_dotenv
-from langchain.prompts import ChatPromptTemplate
-from langchain.prompts import HumanMessagePromptTemplate
-from langchain.prompts import PromptTemplate
 from langchain.chat_models import GigaChat
-from langchain.chains import LLMChain
-from langchain.chains.summarize import load_summarize_chain
-from langchain.document_loaders import WebBaseLoader
-from langchain.schema.messages import HumanMessage, SystemMessage
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 import nest_asyncio
 
-import re
 import requests
 import json
 
