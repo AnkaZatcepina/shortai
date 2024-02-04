@@ -37,11 +37,21 @@ def get_file(user_id: str)-> str | None:
         return text    
     except:
         return None  
+    
+def make_request(prompt_template: str, combine_prompt: str, text: str):
+    json_request = { 'map_prompt' :  prompt_template, 'combine_prompt':  combine_prompt, 'text': text}
+    response = requests.post(f'{API_URL}/prompt_text', json=json_request)
+    logger.info(f'STATUS {response.status_code}')
+    content_type = response.headers['Content-Type']
+    logger.info(f'CONTENT TYPE {content_type}')  
+    if content_type == 'text/html; charset=utf-8':
+        return json.loads(response.text) 
+    raise ValueError("Ошибка в API")    
 
 def get_summary(user_id: str)->str:
     text = get_file(user_id)
 
-    if text == None:
+    if not text:
         return "Извините, не получается проанализировать текст"  
     
     prompt_template = """
@@ -50,63 +60,48 @@ def get_summary(user_id: str)->str:
         ```{text}```
         """
     
-    json_request = { 'map_prompt' :  prompt_template, 'combine_prompt':  prompt_template, 'text': text}
-    response = requests.post(f'{API_URL}/prompt_text', json=json_request)
-    logger.info(f'STATUS {response.status_code}')
-    content_type = {response.headers['Content-Type']}
-    logger.info(f'CONTENT TYPE {content_type}')     
-
-    if content_type == {'text/html; charset=utf-8'}:
-        response_dict = json.loads(response.text)    
-        logger.info(f'DICT {response_dict}')  
-        return response_dict['prompted_text']
-    return "Ошибка в API" 
+    combine_prompt = prompt_template
+    response_dict = make_request(prompt_template, combine_prompt, text) 
+    return response_dict['prompted_text']
 
 
 def get_one_sentence(user_id: str)->str:
     text = get_file(user_id)
-    if text == None:
+    if not text:
         return "Извините, не получается проанализировать текст"  
-    
+
     prompt_template = """
-        Ты писатель. Сделай написать смысл текста ниже одним предложением. Ничего не придумывай, только текст ниже между ``````
-        Если текст не на русском языке, то переведи на русский язык.
+        Сделай краткое изложение по тексту ниже. Ничего не придумывай, только текст ниже между ``````
+        Краткое изложение текста должно быть не длинее 1 страницы A4 и на русском языке.
+        ```{text}```
+    """
+
+    combine_prompt = """
+        Ты писатель. Напиши аннотацию текста ниже одним предложением. Ничего не придумывай, только текст ниже между ``````
         В результате должно быть только одно предложение.
         ```{text}```
-        """
-    
-    chat_template = ChatPromptTemplate.from_messages(
-        [
-        SystemMessage(
-            content=(
-                "Ты эксперт журналист. Твоя задача написать смысл статьи в одном предложении. Нельзя ничего придумывать, кроме информации из статьи."
-            )
-        ),
-        HumanMessagePromptTemplate.from_template(prompt_template),
-    ])
-    prompt = chat_template.format_messages(text=text)
-    response = giga.invoke(prompt).content
-    return response
+    """ 
+
+    response_dict = make_request(prompt_template, combine_prompt, text)  
+    return response_dict['prompted_text'] 
 
 def get_theses(user_id: str)->str:
     text = get_file(user_id)
-    if text == None:
+    if not text:
         return "Извините, не получается проанализировать текст"  
-    
+
     prompt_template = """
-        Ты писатель. Твоя задача перевести текст на русский язык и написать основные тезисы по тексту ниже. Ничего не придумывай, только текст ниже между ``````
-        Тезисы должны быть написаны в виде нумерованного списка на русском языке.
+        Сделай краткое изложение по тексту ниже. Ничего не придумывай, только текст ниже между ``````
+        Краткое изложение текста должно быть не длинее 1 страницы A4.
         ```{text}```
-        """
-    chat_template = ChatPromptTemplate.from_messages(
-        [
-        SystemMessage(
-            content=(
-                "Ты эксперт журналист. Твоя задача написать основные тезисы статьи в виде нумерованного списка. Нельзя ничего придумывать, кроме информации из статьи."
-            )
-        ),
-        HumanMessagePromptTemplate.from_template(prompt_template),
-    ])
-    prompt = chat_template.format_messages(text=text)
-    response = giga.invoke(prompt).content
-    return response
+    """
+
+    combine_prompt = """
+        Напиши основные тезисы текста в виде нумерованного списка. Нельзя ничего придумывать кроме информации из текста.
+        Тезисы должны быть не длинее 1 страницы A4.
+        ```{text}```
+    """ 
+
+    response_dict = make_request(prompt_template, combine_prompt, text)  
+    return response_dict['prompted_text'] 
+
