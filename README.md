@@ -1,6 +1,8 @@
 # ShortAI
 
-## Run locally
+## ShortAI - Telegram-бот для генерации краткого содержания текстов
+
+## Локальный запуск
 
 ### Create .env file. 
 ```bash
