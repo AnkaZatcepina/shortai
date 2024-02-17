@@ -24,9 +24,3 @@ docker compose ps
 docker compose logs -f
 ```
 
-# Control psql
-``` bash
-docker compose run db bash
-
->>> psql postgres://
-```
